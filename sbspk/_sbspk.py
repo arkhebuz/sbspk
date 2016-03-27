@@ -17,7 +17,11 @@ class SBSPKError(Exception):
     ''' Exception raised by SBSPK code. 
     
     Custom exception allows to differentiate bettewen those intentionaly
-    raised from SBSPK with raise statement and other exceptions.
+    raised from SBSPK with raise statement and other errors. This
+    exception is exposed at module level for convenience, so you can 
+    import it with:
+    
+    >>> from sbspk import SBSPKError
     '''
     pass
 
@@ -39,7 +43,7 @@ def talk(target, email, startdate, stopdate, timeout):
     works, just use an SBSPK class. If retrieval is broken, it's probably
     broken in this function, hence it's included in the documentation.
     
-    Args:
+    Arguments:
         target (str): Name of a target object.
         email (str): Your email address.
         startdate (str): Ephemeris start date for an SPK file, for example ``'2010-01-01'``.
@@ -47,9 +51,8 @@ def talk(target, email, startdate, stopdate, timeout):
         timeout (int): Max time to wait for expected JPL Horizons output, seconds.
     
     Raises:
-        pexpect.TIMEOUT: ``timeout`` was reached. May indicate Horizons 
-                         interface change, aside of network connectivity
-                         problems.
+        pexpect.TIMEOUT: ``timeout`` was reached. Aside of network connectivity
+                         problems may indicate Horizons interface change.
         sbspk.SBSPKError: Raised if either ``target`` was not found or object ID
                           could not be extracted from the telnet output.
     
@@ -149,15 +152,17 @@ def talk(target, email, startdate, stopdate, timeout):
 
 class SBSPK(object):
     ''' 
-    Retrives a small-body SPICE binary kernel from the JPL Horizons system.
+    Retrieves a small-body SPICE binary kernel from the JPL Horizons system.
     
     Kernel files are saved to disk. Horizons telnet interface is used.
     A telnet client has to be installed on your system, as well as your 
     firewall must allow for a telnet connection to horizons.jpl.nasa.gov
     on a port 6775, and for establishing a passive ftp conection.
     
-    Some human-readable retrieval status information is logged at the
-    INFO level using standard Python ``logging`` module.
+    This class has a number of user-accesible parameters and a single 
+    ``SBSPK.get`` method launching the kernel generation. Some human-readable
+    retrieval status information is logged at the INFO level using the 
+    standard Python ``logging`` module.
     
     Example usage:
     
@@ -165,23 +170,25 @@ class SBSPK(object):
     >>> from sbspk import SBSPK
     >>> s = SBSPK()
     >>> s.get("2000 SG344", directory=os.getcwd())
+    [('/tmp/3054374_2000_SG344.bsp', '3054374')]
 
     Interaction with Horizons is fragile and over the years can be broken
-    by minor changes in the telnet interface, thus was implemented solely
-    in a ``sbspk._sbspk.talk`` function.
+    even by minor changes in the telnet interface, thus was implemented 
+    solely in a ``sbspk._sbspk.talk`` function.
     
     The SBSPK class ``__init__`` method takes ``_talkfunc`` keyword arg
     that defaults to ``sbspk._sbspk.talk`` function. Other functions 
     can be supplied here as a drop-in replacement if they match 
     ``sbspk._sbspk.talk`` args and returns.
     '''
+    
     printprogress = False
     ''' Prints the SPK download progress meter. This is separate from 
     logging and turned off by default. '''
     
-    email = 'sorry@noemail.org'
-    ''' Email address required by Horizons SPK generation '''
-    
+    email = 'sorry@noemail.org'     #: Email address required by Horizons SPK generation 
+    """Email address required by Horizons SPK generation. """
+
     startdate = '2010-01-01'
     ''' Ephemeris start date for an SPK file, default is ``'2010-01-01'``. '''
     
@@ -194,9 +201,9 @@ class SBSPK(object):
     
     fileformat = "<OBJID>_<TARGET>.bsp"
     ''' Kernel file name format. ``<OBJID>`` will be replaced with 
-    current object ID, ``<TARGET>`` will be replaced with specified
+    a current object ID, ``<TARGET>`` will be replaced with a specified
     targe name. Be carefull - files will be overwritten without 
-    any warning'''
+    any warning. '''
     
     def __init__(self, _talkfunc=talk):
         self.logger = logging.getLogger("SBSPK_Logger")
@@ -223,11 +230,14 @@ class SBSPK(object):
                     
                     >>> s = SBSPK()
                     >>> s.get('2000 SG344')
+                    [('/tmp/3054374_2000_SG344.bsp', '3054374')]
                     >>> s.get(['2014 SU1', '2015 TB'])
+                    [('/tmp/3689273_2014_SU1.bsp', '3689273'), 
+                     ('/tmp/3728897_2015_TB.bsp', '3728897')]
 
             directory: Directory to which kernel file(s) will be 
                        downloaded to. Defaults to ``'/tmp'``.
-        Returns:
+        Returns: 
             List of ``[SPK_file, horizons_object_ID]``, (str, str) pairs.
         
         TODO: smarter retrieving
@@ -258,5 +268,4 @@ class SBSPK(object):
                 print('  Done.')
             self.logger.info('Kernel file can be found at ' + urlret[0])
             return urlret[0], objid
-
 
